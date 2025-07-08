@@ -382,11 +382,17 @@ def extract_table_data(docx_path) -> dict:
             for cell_index, cell in enumerate(row.cells):
                 cell_text = cell.text.strip() if cell.text.strip() else "[Empty]"
                 if table_index == 0:
+                    if ":" not in cell_text:
+                        continue
                     field_name = cell_text.split(":")[0].strip()
                     if field_name == 'SVNR.':
                         field_value = cell_text.split(":")[1].strip() if cell_text.split(":")[1].strip() else "Feld fehlt"
-                        collected_data["SVNR_4stellig"] = field_value.split(" ")[0]
-                        collected_data["SVNR_datum"] = field_value.split(" ")[1]
+                        if " " in field_value:
+                            collected_data["SVNR_4stellig"] = field_value.split(" ")[0]
+                            collected_data["SVNR_datum"] = field_value.split(" ")[1]
+                        else:
+                            collected_data["SVNR_4stellig"] = field_value[:4]
+                            collected_data["SVNR_datum"] = field_value[4:]
                     else:
                         field_value = cell_text.split(":")[1].strip() if cell_text.split(":")[1].strip() else "Feld fehlt"
                         collected_data[field_name] = field_value
