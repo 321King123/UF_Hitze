@@ -6,6 +6,7 @@ from docx import Document
 from lxml import etree
 import pdfrw
 from pdfrw import PdfReader, PdfWriter, PdfDict, PdfName, PdfString, PdfObject
+from datetime import datetime
 
 
 def extract_data_from_docx(docx_path):
@@ -146,12 +147,12 @@ def extract_data_from_docx(docx_path):
             else:
                 value = False
             foundCheckbox = True  # Mark that we found a checkbox
-
     formerror = False
     truefalseerror = False
     missingInfoError = False
     allergienerror = False
     raucherdatumerror = False
+    rauchererror = False
     sonstKrankError = False
     herzInsufError = False
     wrong_fields = list()
@@ -162,21 +163,28 @@ def extract_data_from_docx(docx_path):
             wrong_fields.append(checkboxName[:-3])
             formerror = True
             truefalseerror = True
+    if checkboxes["Nichtraucher_Ja"] and checkboxes["Raucher_Ja"]:
+        print(f"Achtung: Eine Person kann nicht gleichzeitig Raucher und Nichtraucher sein!")
+        formerror = True
+        rauchererror = True
+    if checkboxes["Nichtraucher_Nein"] and checkboxes["Raucher_Nein"]:
+        print(f"Achtung: Eine Person muss entweder Raucher oder Nichtraucher sein!")
+        formerror = True
+        rauchererror = True
 
-
-
+    print(checkboxes)
     other_data = extract_table_data(docx_path)
 
-    if (checkboxes["Nichtraucher_Ja"] and len(other_data["Nichtraucher_Datum"].strip()) != 4) or (checkboxes["Raucher_Ja"] and len(other_data["Raucher_Datum"].strip()) != 4):
+    if ((checkboxes["Nichtraucher_Ja"] and len(other_data["Nichtraucher_Datum"].strip()) != 4)) or ((checkboxes["Raucher_Ja"] and len(other_data["Raucher_Datum"].strip()) != 4)):
         formerror = True
         raucherdatumerror = True
 
-    if checkboxes["Fieber_Ja"] and other_data["Fieber_Datum"] == "[Empty]" or len(other_data["Fieber_Datum"].strip()) == 0:
+    if checkboxes["Fieber_Ja"] and (other_data["Fieber_Datum"] == "[Empty]" or len(other_data["Fieber_Datum"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Fieberhafter Infekt")
 
-    if checkboxes["Medikamente_Ja"] and other_data["Medikamente"] == "[Empty]" or len(other_data["Medikamente"].strip()) == 0:
+    if checkboxes["Medikamente_Ja"] and (other_data["Medikamente"] == "[Empty]" or len(other_data["Medikamente"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Medikamente Ja aber keine angegeben")
@@ -186,12 +194,12 @@ def extract_data_from_docx(docx_path):
         missingInfoError = True
         missing_fields.append("Medikamente Nein aber welche angegeben")
 
-    if checkboxes["Unfälle_Ja"] and other_data["Unfälle"] == "[Empty]" or len(other_data["Unfälle"].strip()) == 0:
+    if checkboxes["Unfälle_Ja"] and (other_data["Unfälle"] == "[Empty]" or len(other_data["Unfälle"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Operationen/Unfälle")
 
-    if checkboxes["Frisch_Herzinfarkt_Ja"] and other_data["Frischer_Herzinfarkt_Datum"] == "[Empty]" or len(other_data["Frischer_Herzinfarkt_Datum"].strip()) == 0:
+    if checkboxes["Frisch_Herzinfarkt_Ja"] and (other_data["Frischer_Herzinfarkt_Datum"] == "[Empty]" or len(other_data["Frischer_Herzinfarkt_Datum"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Frischer Herzinfarkt")
@@ -206,7 +214,7 @@ def extract_data_from_docx(docx_path):
         missingInfoError = True
         missing_fields.append("Schlaganfall")
 
-    if checkboxes["Herzinfarkt_Ja"] and other_data["Herzinfarkt_Datum"] == "[Empty]" or len(other_data["Herzinfarkt_Datum"].strip()) == 0:
+    if checkboxes["Herzinfarkt_Ja"] and (other_data["Herzinfarkt_Datum"] == "[Empty]" or len(other_data["Herzinfarkt_Datum"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Herzinfarkt (nicht frisch)")
@@ -216,17 +224,17 @@ def extract_data_from_docx(docx_path):
         missingInfoError = True
         missing_fields.append("Herzklappenfehler")
 
-    if checkboxes["Herzinnenhautentzündung_Ja"] and other_data["Endokarditis_Datum"] == "[Empty]" or len(other_data["Endokarditis_Datum"].strip()) == 0:
+    if checkboxes["Herzinnenhautentzündung_Ja"] and (other_data["Endokarditis_Datum"] == "[Empty]" or len(other_data["Endokarditis_Datum"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Herzinnenhautentzündung")
 
-    if checkboxes["Herzschrittmacher_Ja"] and other_data["Herzschrittmacher_Implantatpass"] == "[Empty]" or len(other_data["Herzschrittmacher_Implantatpass"].strip()) == 0:
+    if checkboxes["Herzschrittmacher_Ja"] and (other_data["Herzschrittmacher_Implantatpass"] == "[Empty]" or len(other_data["Herzschrittmacher_Implantatpass"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Herzschrittmacher-Implantation")
 
-    if checkboxes["Defi_Ja"] and other_data["Defi_Implantatpass"] == "[Empty]" or len(other_data["Defi_Implantatpass"].strip()) == 0:
+    if checkboxes["Defi_Ja"] and (other_data["Defi_Implantatpass"] == "[Empty]" or len(other_data["Defi_Implantatpass"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Defibrillator-Implantation")
@@ -237,17 +245,17 @@ def extract_data_from_docx(docx_path):
         missing_fields.append("Wiederbelebung nach Herzsillstand")
 
 
-    if checkboxes["Sonst_Krank_Ja"] and other_data["Sonstige_Krankheiten"] == "[Empty]" or len(other_data["Sonstige_Krankheiten"].strip()) == 0:
+    if checkboxes["Sonst_Krank_Ja"] and (other_data["Sonstige_Krankheiten"] == "[Empty]" or len(other_data["Sonstige_Krankheiten"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Sonstige Krankheiten")
 
-    if checkboxes["Herzschwäche_Ja"] and other_data["Herzinsuffizienz_Beschreibung"] == "[Empty]" or len(other_data["Herzinsuffizienz_Beschreibung"].strip()) == 0:
+    if checkboxes["Herzschwäche_Ja"] and (other_data["Herzinsuffizienz_Beschreibung"] == "[Empty]" or len(other_data["Herzinsuffizienz_Beschreibung"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Herzschwäche (Herzinsuffizienz)")
 
-    if checkboxes["Allergien_Ja"] and other_data["Allergien"] == "[Empty]" or len(other_data["Allergien"].strip()) == 0:
+    if checkboxes["Allergien_Ja"] and (other_data["Allergien"] == "[Empty]" or len(other_data["Allergien"].strip()) == 0):
         formerror = True
         missingInfoError = True
         missing_fields.append("Allergien")
@@ -256,6 +264,8 @@ def extract_data_from_docx(docx_path):
         errormessage = "Formular falsch ausgefüllt! "
         if truefalseerror:
             errormessage += f"Folgende felder haben entweder keine oder 2 Kreuze: {', '.join(wrong_fields)} "
+        if rauchererror:
+            errormessage += f"Eine Person ist fälschlicherweise entweder sowohl Raucher als auch Nichtraucher oder keines von beiden."
         if raucherdatumerror:
             errormessage += f"Beim Raucher bzw Nichtraucher feld wird eine 4stellige Jahreszahl erwartet."
         if missingInfoError:
@@ -397,7 +407,7 @@ def extract_table_data(docx_path) -> dict:
                         field_value = cell_text.split(":")[1].strip() if cell_text.split(":")[1].strip() else "Feld fehlt"
                         collected_data[field_name] = field_value
                 elif (table_index, row_index, cell_index) in data_indices_to_field_name.keys():
-                    collected_data[data_indices_to_field_name[(table_index, row_index, cell_index)]] = cell_text
+                    collected_data[data_indices_to_field_name[(table_index, row_index, cell_index)]] = cell_text.strip()
                 row_data.append(cell_text)  # Show "[Empty]" for empty cells
             if table_index == 10 and row_index > 0 and row_data != ['[Empty]', '[Empty]', '[Empty]']:
                 medikamente.append(row_data[0] + " (" + row_data[1] + ")")
@@ -406,6 +416,22 @@ def extract_table_data(docx_path) -> dict:
             #     print(f"    Cell {cell}: {row_data[cell]}")
 
         # print("\n" + "-" * 50 + "\n")  # Separator between tables
+    if len(collected_data["Nichtraucher_Datum"]) > 4:
+        date_items = collected_data["Nichtraucher_Datum"].split('.')
+        if len(date_items[-1]) == 4 and (date_items[-1].startswith("20") or date_items[-1].startswith("19")):
+            collected_data["Nichtraucher_Datum"] = date_items[-1]
+        elif len(date_items[-1]) == 2 and int(date_items[-1]) < (datetime.now().year % 100):
+            collected_data["Nichtraucher_Datum"] = "20" + date_items[-1]
+        elif len(date_items[-1]) == 2 and int(date_items[-1]) > (datetime.now().year % 100):
+            collected_data["Nichtraucher_Datum"] = "19" + date_items[-1]
+    if len(collected_data["Raucher_Datum"]) > 4:
+        date_items = collected_data["Raucher_Datum"].split('.')
+        if len(date_items[-1]) == 4 and (date_items[-1].startswith("20") or date_items[-1].startswith("19")):
+            collected_data["Raucher_Datum"] = date_items[-1]
+        elif len(date_items[-1]) == 2 and int(date_items[-1]) < (datetime.now().year % 100):
+            collected_data["Raucher_Datum"] = "20" + date_items[-1]
+        elif len(date_items[-1]) == 2 and int(date_items[-1]) > (datetime.now().year % 100):
+            collected_data["Raucher_Datum"] = "19" + date_items[-1]
     collected_data["Medikamente"] = ", ".join(medikamente)
     # print(collected_data)
     return collected_data
@@ -762,36 +788,46 @@ def fill_target_pdf(input_pdf, spirometry_data, ergometry_data, form_data, outpu
                             pass
                         elif checkbox_to_field[checkbox_counter] in form_data and form_data[checkbox_to_field[checkbox_counter]]:
                             annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                            annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
                         elif checkbox_to_field[checkbox_counter] in form_data and not form_data[checkbox_to_field[checkbox_counter]]:
                             annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                            annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
                         elif checkbox_to_field[checkbox_counter] == "Sehen_1":
                             if form_data["Augenkrank_Nein"] and form_data["Netzhautkrank_Nein"] and form_data["Sehnervenkrank_Nein"] and \
                                 form_data["Bildfeldausfälle_Nein"]:
                                 annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
                             else:
                                 annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
                         elif checkbox_to_field[checkbox_counter] == "Sehen_2":
                             if form_data["Augenkrank_Ja"] or \
                                 form_data["Netzhautkrank_Ja"] or form_data["Sehnervenkrank_Ja"] or \
                                 form_data["Bildfeldausfälle_Ja"]:
                                 annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
                             else:
                                 annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
                         elif checkbox_to_field[checkbox_counter].endswith("_Nein"):
                             annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                            annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
                         else:
                             annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                            annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
 
                     # update free field
                     if field_name in parameter_mapping_spiro:
                         # print(annotation)
                         annotation.V = pdfrw.PdfString(f"({spirometry_data[parameter_mapping_spiro[field_name]]})")
+                        annotation.AS = pdfrw.PdfString(f"({spirometry_data[parameter_mapping_spiro[field_name]]})")
                         # annotation.AP = pdfrw.PdfDict()
                     if field_name in parameter_mapping_ergo or f"ergo_{text26Age}" in parameter_mapping_ergo:
                         if f"ergo_{text26Age}" in parameter_mapping_ergo:
                             field_name = f"ergo_{text26Age}"
                         # print(annotation)
                         annotation.V = pdfrw.PdfString(f"({ergometry_data[parameter_mapping_ergo[field_name]]})")
+                        annotation.AS = pdfrw.PdfString(f"({ergometry_data[parameter_mapping_ergo[field_name]]})")
                     if field_name in parameter_mapping_form:
 
                         fieldValue = form_data[parameter_mapping_form[field_name][0]]
@@ -800,11 +836,14 @@ def fill_target_pdf(input_pdf, spirometry_data, ergometry_data, form_data, outpu
                                 fieldValue += f", {form_data[parameter_mapping_form[field_name][i]]}"
                         # print(f"{annotation} V: {annotation.V} AP: {annotation.AP}")
                         annotation.V = pdfrw.PdfString(f"({fieldValue})")
+                        annotation.AS = pdfrw.PdfString(f"({fieldValue})")
                     if field_name == "Text_22":
                         if form_data["Raucher_Ja"]:
                             annotation.V = pdfrw.PdfString(f"({form_data['Raucher_Datum']})")
+                            annotation.AS = pdfrw.PdfString(f"({form_data['Raucher_Datum']})")
                         elif form_data["Nichtraucher_Ja"]:
                             annotation.V = pdfrw.PdfString(f"({form_data['Nichtraucher_Datum']})")
+                            annotation.AS = pdfrw.PdfString(f"({form_data['Nichtraucher_Datum']})")
                     if f"extra_{text26Age}" in parameter_mapping_form:
                         field_name = f"extra_{text26Age}"
                         fieldValue = form_data[parameter_mapping_form[field_name][0]]
@@ -813,6 +852,8 @@ def fill_target_pdf(input_pdf, spirometry_data, ergometry_data, form_data, outpu
                                 fieldValue += f", {form_data[parameter_mapping_form[field_name][i]]}"
                         # print(f"{annotation} V: {annotation.V} AP: {annotation.AP}")
                         annotation.V = pdfrw.PdfString(f"({fieldValue})")
+                        annotation.AS = pdfrw.PdfString(f"({fieldValue})")
+                        annotation.AP = pdfrw.PdfString(f"({fieldValue})")
                         # annotation.AP = pdfrw.PdfDict()
                     # if text26Age >= 70:
                     #     annotation.V = pdfrw.PdfString(f"(number {text26Age})")
