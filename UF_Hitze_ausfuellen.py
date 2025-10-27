@@ -277,6 +277,9 @@ def extract_data_from_docx(docx_path):
     other_data["Krankheiten"] = ""
     if checkboxes["Allergien_Ja"]:
         other_data["Krankheiten"] += (f"Allergien: {other_data['Allergien']}, ")
+    # TODO check
+    if checkboxes["Unfälle_Ja"]:
+        other_data["Krankheiten"] += (f"Operationen/Unfälle: {other_data['Unfälle']}, ")
     if checkboxes["Fieber_Ja"]:
         other_data["Krankheiten"] += (f"Fieberhafter Infekt (seit {other_data['Fieber_Datum']}), ")
     if checkboxes["Diabetes_Ja"]:
@@ -288,6 +291,8 @@ def extract_data_from_docx(docx_path):
     if checkboxes["Beinvenen_Ja"]:
         other_data["Krankheiten"] += (f"Akute Beinvenenthrombose, ")
     if checkboxes["Bluthochdruck_Ja"]:
+        other_data["Krankheiten"] += (f"Hypertonie, ")
+    if checkboxes["Schmerzen_Druck_Ja"]:
         arten = list()
         if checkboxes['Schmerzen_Druck_Brust']:
             arten.append("Brust")
@@ -792,6 +797,20 @@ def fill_target_pdf(input_pdf, spirometry_data, ergometry_data, form_data, outpu
                         elif checkbox_to_field[checkbox_counter] in form_data and not form_data[checkbox_to_field[checkbox_counter]]:
                             annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
                             annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
+                        elif checkbox_to_field[checkbox_counter] == "Arztl_Behand_Ja":
+                            if form_data["Medikamente_Ja"]:
+                                annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
+                            else:
+                                annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
+                        elif checkbox_to_field[checkbox_counter] == "Arztl_Behand_Nein" and True:
+                            if form_data["Medikamente_Ja"]:
+                                annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('0')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('0')))
+                            else:
+                                annotation.update(pdfrw.PdfDict(V=pdfrw.PdfName('1')))
+                                annotation.update(pdfrw.PdfDict(AS=pdfrw.PdfName('1')))
                         elif checkbox_to_field[checkbox_counter] == "Sehen_1":
                             if form_data["Augenkrank_Nein"] and form_data["Netzhautkrank_Nein"] and form_data["Sehnervenkrank_Nein"] and \
                                 form_data["Bildfeldausfälle_Nein"]:
